@@ -69,6 +69,7 @@ class Conecta4App:
     def wait_for_player2_move(self):
         changed = False
         while not changed:
+            time.sleep(0.5)
             new_mod_time = os.path.getmtime("board_state.txt")
             changed = new_mod_time != self.last_mod_time
             if changed:

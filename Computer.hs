@@ -64,12 +64,20 @@ contarPiezasJug1 = sum . map (length . filter (== 1))
 
 jugarIA :: Int -> Tablero -> Tablero
 jugarIA d b
-  | contarPiezasJug1 b == 1 = poner 2 3 b -- Heuristica inicial
-  | otherwise      = pos
+  | contarPiezasJug1 b == 1 = poner 2 3 b -- Heurística inicial
+  | otherwise = poner 2 columnaElegida b
     where
       mt = generalArbol 2 d b
       ct = obtenerCoeficientes 2 mt
       ts = obtenerSubNodos mt
       tsc = obtenerSubNodos ct
       mct = obtenerMaxValorArbol tsc
-      pos = head [obtenerValor (ts !! x) | x <- [0..length ts - 1], obtenerValor (tsc !! x) == mct]
+      -- Aquí obtenemos la columna de la jugada correspondiente
+      columnaElegida = obtenerColumnaConMaximo mct ts tsc
+
+-- Función para obtener la columna correspondiente a la jugada con el valor máximo
+obtenerColumnaConMaximo :: Int -> [Arbol Tablero] -> [Arbol Int] -> Int
+obtenerColumnaConMaximo mct ts tsc =
+  head [col | (col, val) <- zip [0..] tsc, obtenerValor val == mct]
+
+

@@ -15,6 +15,7 @@ main = do
 
     -- Leer tablero actual
     boardActual <- readBoard
+    print boardActual
     putStrLn "Tablero leido"
 
     if haFinalizado boardActual
@@ -27,9 +28,8 @@ main = do
             putStrLn "IA ha jugado"
 
             print nuevoBoard
-            -- Guardar el nuevo estado del tablero
             writeBoard nuevoBoard
-            
+            putStrLn "Tablero escrito"
 
             if haFinalizado nuevoBoard
                 then return ()

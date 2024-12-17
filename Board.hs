@@ -24,10 +24,11 @@ localizarCoord i x y (l:ls) = l : localizarCoord i (x-1) y ls
 localizarCoord _ _ _ []     = []
 
 addEnColumna :: Int -> [Int] -> [Int]
-addEnColumna i [] = []
+addEnColumna i [] = []  
 addEnColumna i (x:xs)
-  | x == 0    = i:xs
-  | otherwise = x : addEnColumna i xs
+  | x == 0    = i : xs  
+  | otherwise = x : addEnColumna i xs 
+
 
 poner :: Int -> Int -> Tablero -> Tablero
 poner _ _ [] = []
