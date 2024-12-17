@@ -5,6 +5,7 @@ module Board
   , haFinalizado
   , transponer
   , getDiagonales
+  , haGanado
   , lineaCompleta
   ) where
 
