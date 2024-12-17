@@ -68,12 +68,6 @@ class Conecta4App:
                 color = "white" if self.board[row][col] == 0 else ("red" if self.board[row][col] == 1 else "yellow")
                 self.canvas.create_oval(x0, y0, x1, y1, fill=color)
 
-    def save_board_state(self):
-        with open("board_state.txt", "w") as file:
-            for col in range(len(self.board[0])):
-                column_values = [str(self.board[row][col]) for row in reversed(range(len(self.board)))]
-                file.write(" ".join(column_values) + "\n")
-        
     def wait_for_player2_move(self):
         changed = False
         while not changed:
@@ -108,6 +102,15 @@ class Conecta4App:
                 self.board[expected_rows - 1 - row][col] = int(lines[col][row])
 
         self.last_mod_time = os.path.getmtime("board_state.txt")
+
+
+        
+    def save_board_state(self):
+        with open("board_state.txt", "w") as file:
+            for col in range(len(self.board[0])):
+                column_values = [str(self.board[row][col]) for row in reversed(range(len(self.board)))]
+                file.write(" ".join(column_values) + "\n")
+        
 
     def check_winner(self, player):
         for row in range(6):
