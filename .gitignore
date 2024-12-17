@@ -1,0 +1,19 @@
+# Compilados y binarios
+*.hi
+*.o
+*.dyn_o
+*.dyn_hi
+*.a
+*.so
+*.exe
+
+
+# Archivos de configuración del editor/IDE
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Ignoramos el archivo del tamblero
+board_state.txt
