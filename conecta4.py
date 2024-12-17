@@ -1,11 +1,12 @@
 import tkinter as tk
 import os
 import time
+import subprocess  # Para ejecutar el archivo .exe
 from tkinter import messagebox
 
 class Conecta4App:
     def __init__(self, root):
-
+        # Ejecutar el archivo .exe en un subproceso al iniciar la app
         self.root = root
         self.root.title("Conecta 4")
         self.board = [[0 for _ in range(7)] for _ in range(6)]
@@ -14,7 +15,18 @@ class Conecta4App:
         self.save_board_state()
         self.player_turn = True
         self.last_mod_time = 0
-        
+        self.run_exe_on_start()
+
+    def run_exe_on_start(self):
+        exe_path = "./main.exe" 
+        if os.path.exists(exe_path):
+            try:
+                subprocess.Popen([exe_path]) 
+                print("Archivo .exe ejecutado correctamente.")
+            except Exception as e:
+                print(f"Error al ejecutar el archivo .exe: {e}")
+        else:
+            print(f"El archivo .exe no se encontró en la ruta: {exe_path}")
 
     def create_widgets(self):
         self.canvas = tk.Canvas(self.root, width=740, height=640, bg="blue")
@@ -58,13 +70,9 @@ class Conecta4App:
 
     def save_board_state(self):
         with open("board_state.txt", "w") as file:
-            # Iterar por columnas (de izquierda a derecha)
-            for col in range(len(self.board[0])):  # Iterar sobre las columnas del tablero
-                # Recoger los valores de la columna de abajo hacia arriba
+            for col in range(len(self.board[0])):
                 column_values = [str(self.board[row][col]) for row in reversed(range(len(self.board)))]
                 file.write(" ".join(column_values) + "\n")
-        
-            
         
     def wait_for_player2_move(self):
         changed = False
@@ -83,30 +91,23 @@ class Conecta4App:
                 self.canvas.bind("<Button-1>", self.handle_click)  
                 break
 
-
     def load_board_state(self):
         with open("board_state.txt", "r") as file:
             lines = [line.strip().split() for line in file if line.strip()]  # Leer y limpiar líneas vacías
 
-        # Verificar que el archivo tenga dimensiones válidas
         expected_rows = 6
         expected_cols = 7
 
         if len(lines) != expected_cols or any(len(line) != expected_rows for line in lines):
             raise ValueError("El archivo board_state.txt no tiene el formato correcto.")
 
-        # Inicializar el tablero con dimensiones correctas (6 filas, 7 columnas)
         self.board = [[0 for _ in range(expected_cols)] for _ in range(expected_rows)]
 
-        # Rellenar el tablero con las columnas invertidas verticalmente
         for col in range(expected_cols):
             for row in range(expected_rows):
-                # Asignar valores de la columna del archivo a las filas del tablero (invertidas)
                 self.board[expected_rows - 1 - row][col] = int(lines[col][row])
 
         self.last_mod_time = os.path.getmtime("board_state.txt")
-
-
 
     def check_winner(self, player):
         for row in range(6):
@@ -132,7 +133,7 @@ class Conecta4App:
     def reset_board(self):
         self.board = [[0 for _ in range(7)] for _ in range(6)]
         self.update_board()
-        self.player_turn = True  # Asegurarse de que empieza el Jugador 1
+        self.player_turn = True
         self.canvas.bind("<Button-1>", self.handle_click)  
 
 if __name__ == "__main__":

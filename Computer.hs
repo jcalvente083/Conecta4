@@ -1,72 +1,83 @@
 module Computer (jugarIA) where
 
 import Board
-import Data.List (transpose)
 
--- | Representación de un árbol de movimientos posibles
-data Arbol a = Nodo a [Arbol a] deriving Show
+secuenciaLineal :: Int -> Int -> Int -> Int -> [Int] -> Int
+secuenciaLineal n 0 i _ b = 1 + secuenciaLineal n n i 0 b
+secuenciaLineal _ _ _ _ [] = 0
+secuenciaLineal n k i z (x:xs)
+  | x == i && x == z = secuenciaLineal n (k-1) i x xs
+  | x == i && k == n = secuenciaLineal n (k-1) i x xs
+  | otherwise        = secuenciaLineal n n i x xs
 
--- | Evalúa el estado del tablero desde la perspectiva del jugador.
--- | Devuelve un puntaje para el estado actual del tablero.
-evaluar :: Int -> Tablero -> Int
-evaluar jugador tablero
-    | haGanado tablero = if esGanador jugador tablero then 1000 else -1000
-    | otherwise =
-        10 * contarSecuencias 3 jugador tablero
-        + 5 * contarSecuencias 2 jugador tablero
-        - 10 * contarSecuencias 3 (3 - jugador) tablero
-        - 5 * contarSecuencias 2 (3 - jugador) tablero
+secuenciaVertical :: Int -> Int -> Tablero -> Int
+secuenciaVertical n i = sum . map (secuenciaLineal n n i 0)
 
--- | Verifica si el jugador dado ha ganado el tablero
-esGanador :: Int -> Tablero -> Bool
-esGanador jugador tablero = any (any (== jugador)) (filasGanadoras tablero)
-  where filasGanadoras = concatMap getDiagonales . (:[]) . id
+secuenciaHorizontal :: Int -> Int -> Tablero -> Int
+secuenciaHorizontal n i = secuenciaVertical n i . transponer
 
--- | Cuenta todas las secuencias de longitud n en el tablero para un jugador.
-contarSecuencias :: Int -> Int -> Tablero -> Int
-contarSecuencias n jugador tablero =
-    sum [contarEnLinea n jugador linea | linea <- obtenerLineas tablero]
+secuenciaDiagonal1 :: Int -> Int -> Tablero -> Int
+secuenciaDiagonal1 n i = secuenciaVertical n i . getDiagonales
 
--- | Genera todas las líneas posibles del tablero (filas, columnas, diagonales).
-obtenerLineas :: Tablero -> [[Int]]
-obtenerLineas tablero = tablero ++ transpose tablero ++ getDiagonales tablero ++ getDiagonales (map reverse tablero)
+secuenciaDiagonal2 :: Int -> Int -> Tablero -> Int
+secuenciaDiagonal2 n i = secuenciaVertical n i . getDiagonales . reverse
 
--- | Cuenta secuencias consecutivas de n piezas en una línea.
-contarEnLinea :: Int -> Int -> [Int] -> Int
-contarEnLinea n jugador = length . filter (== replicate n jugador) . subsequencesDeLongitud n
+secuencia :: Int -> Int -> Tablero -> Int
+secuencia n i b = secuenciaVertical n i b +
+                secuenciaHorizontal n i b +
+                secuenciaDiagonal1 n i b +
+                secuenciaDiagonal2 n i b
 
--- | Genera todas las subsecuencias de longitud fija.
-subsequencesDeLongitud :: Int -> [a] -> [[a]]
-subsequencesDeLongitud n xs
-    | length xs < n = []
-    | otherwise = take n xs : subsequencesDeLongitud n (tail xs)
+evaluar :: Tablero -> Int
+evaluar b = 100 * secuencia 4 2 b + 5 * secuencia 3 2 b + 2 * secuencia 2 2 b
+       - 1000 * secuencia 4 1 b - 5 * secuencia 3 1 b - 2 * secuencia 2 1 b
 
--- | Genera el árbol de movimientos posibles.
-generarArbol :: Int -> Int -> Tablero -> Arbol Tablero
-generarArbol _ 0 tablero = Nodo tablero []
-generarArbol jugador profundidad tablero
-    | haFinalizado tablero = Nodo tablero []
-    | otherwise =
-        Nodo tablero [generarArbol (3 - jugador) (profundidad - 1) (poner jugador col tablero)
-                      | col <- [0..6], puedeJugar col tablero]
+data Arbol a = Nodo a [Arbol a]
+  deriving Show
 
--- | Realiza el movimiento Minimax para seleccionar la mejor columna.
-jugarIA :: Int -> Int -> Tablero -> Tablero
-jugarIA jugador profundidad tablero =
-    let arbol = generarArbol jugador profundidad tablero
-        mejorMovimiento = snd $ minimax jugador arbol
-    in poner jugador mejorMovimiento tablero
+generalArbol :: Int -> Int -> Tablero -> Arbol Tablero
+generalArbol i 0 b = Nodo b []
+generalArbol i d b = Nodo b [generalArbol (3-i) (d-1) (poner i x b) | x <- [0..6], not $ lineaCompleta (b !! x)]
 
--- | Algoritmo Minimax para seleccionar el mejor movimiento.
-minimax :: Int -> Arbol Tablero -> (Int, Int)
-minimax jugador (Nodo tablero [])
-    = (evaluar jugador tablero, -1)
-minimax jugador (Nodo _ hijos)
-    = let valores = [(fst (minimax (3 - jugador) hijo), idx) | (hijo, idx) <- zip hijos [0..]]
-      in if jugador == 2
-         then maximum valores -- Maximizar el puntaje del jugador 2
-         else minimum valores -- Minimizar el puntaje del jugador 1
+obtenerValor :: Arbol a -> a
+obtenerValor (Nodo a _) = a
 
--- | Verifica si se puede jugar en una columna.
-puedeJugar :: Int -> Tablero -> Bool
-puedeJugar col tablero = any (== 0) (tablero !! col)
+obtenerSubNodos :: Arbol a -> [Arbol a]
+obtenerSubNodos (Nodo _ a) = a
+
+obtenerMaxValorArbol :: [Arbol Int] -> Int
+obtenerMaxValorArbol = maximum . map obtenerValor
+
+obtenerMinValorArbol :: [Arbol Int] -> Int
+obtenerMinValorArbol = minimum . map obtenerValor
+
+obtenerCoeficientes :: Int -> Arbol Tablero -> Arbol Int
+obtenerCoeficientes i (Nodo b []) = Nodo (evaluar b) []
+obtenerCoeficientes i (Nodo b ts) = Nodo (f x) x
+  where
+    n = 3 - i
+    f = if i == 1 then obtenerMinValorArbol else obtenerMaxValorArbol
+    x = [obtenerCoeficientes n t | t <- ts]
+
+contarPiezasJug1 :: Tablero -> Int
+contarPiezasJug1 = sum . map (length . filter (== 1))
+
+jugarIA :: Int -> Tablero -> Tablero
+jugarIA d b
+  | contarPiezasJug1 b == 1 = poner 2 3 b -- Heurística inicial
+  | otherwise = poner 2 columnaElegida b
+    where
+      mt = generalArbol 2 d b
+      ct = obtenerCoeficientes 2 mt
+      ts = obtenerSubNodos mt
+      tsc = obtenerSubNodos ct
+      mct = obtenerMaxValorArbol tsc
+      -- Aquí obtenemos la columna de la jugada correspondiente
+      columnaElegida = obtenerColumnaConMaximo mct ts tsc
+
+-- Función para obtener la columna correspondiente a la jugada con el valor máximo
+obtenerColumnaConMaximo :: Int -> [Arbol Tablero] -> [Arbol Int] -> Int
+obtenerColumnaConMaximo mct ts tsc =
+  head [col | (col, val) <- zip [0..] tsc, obtenerValor val == mct]
+
+
